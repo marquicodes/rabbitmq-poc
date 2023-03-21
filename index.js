@@ -11,7 +11,7 @@ rabbitMQ.on('reconnect', () => {
   console.debug('[AMQP] The connection reestablished.')
   rabbitMQ.connection.then((connection) => {
     addConnectionListener(connection)
-    startProducer()
+    startPublisher()
   })
 })
 
@@ -41,9 +41,9 @@ function addConnectionListener (connection) {
 }
 
 /**
- * Creates channels and asserts queue existence for the producer.
+ * Creates channels and asserts queue existence for the publisher.
  */
-async function startProducer () {
+async function startPublisher () {
   const channelA = await rabbitMQ.createChannel()
   console.log('- Channel A id:', channelA.ch)
   // Sets a time out to close channel A (no particular reason, just testing)
@@ -59,7 +59,7 @@ async function startProducer () {
 }
 
 /**
- * Test scenario on connection and producer.
+ * Test scenario on connection and publisher.
  */
 async function run () {
   const connection = await rabbitMQ.connect()
@@ -67,7 +67,7 @@ async function run () {
     return
   }
   addConnectionListener(connection)
-  await startProducer()
+  await startPublisher()
 }
 
 run()
