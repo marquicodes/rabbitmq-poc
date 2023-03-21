@@ -16,7 +16,7 @@ rabbitMQ.on('reconnect', () => {
 })
 
 /**
- * Add listener on the connection with the broker for the close event.
+ * Adds a listener to the RabbitMQ broker connection for the close event.
  *
  * @param {object} connection the established connection to RabbitMQ broker
  */
