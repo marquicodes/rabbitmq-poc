@@ -254,6 +254,33 @@ class RabbitMQConnector extends EventEmitter {
     const opts = { ...quorumOptions, ...options, ...{ arguments: args } }
     return await channel.assertQueue(queue, opts)
   }
+
+  /**
+   * Publishes a single message to the specified exchange or queue.
+   *
+   * @param {object} channel the channel to use to publish the message
+   * @param {string} exchange the name of the exchange to publish the message; a
+   * special case is sending '' as the exchange, which will send directly to the
+   * queue named by the routing key
+   * @param {string} routingKey determines where the message goes
+   * @param {string} message the message content to be published (internally it
+   * is converted into a buffer as expected from AMQP lib)
+   * @param {object} options an object that contains the remaining parameters,
+   * and are divided into those that have some meaning to `RabbitMQ` and those
+   * that will be ignored by `RabbitMQ` but passed on to consumers. It may be
+   * empty, or omitted in which case defaults will apply.
+   * Extensive information on the fields that can be provided in options can be
+   * found [here]{@link https://amqp-node.github.io/amqplib/channel_api.html#channel_publish}
+   * @returns {boolean} false in case the channel’s write buffer is ‘full’, true
+   * otherwise. If it returns false, it will emit a 'drain' event at some later
+   * time
+   * @throws will throw an error if the message cannot be converted into a
+   * buffer
+   */
+  async publishMessage (channel, exchange, routingKey, message, options) {
+    const content = Buffer.from(message)
+    return await channel.publish(exchange, routingKey, content, options)
+  }
 }
 
 export default new RabbitMQConnector()
