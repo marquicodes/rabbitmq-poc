@@ -193,7 +193,36 @@ class RabbitMQConnector extends EventEmitter {
   }
 
   /**
-   * Asserts the existence of the specified Quorum queue, or creates one.
+   * Asserts the existence of the specified exchange, or creates a new one. If
+   * the exchange exists already and has properties different to those supplied,
+   * the channel will 'splode.
+   *
+   * @param {object} channel the channel to assert exchange existence
+   * @param {string} exchange the name of the exchange
+   * @param {string} type the type of the exchange
+   * @param {object} options an object that may be empty, null, or omitted. The
+   * relevant fields in options are:
+   *  - durable: if true, the exchange will survive broker restarts. Defaults to
+   * true.
+   *  - internal: if true, messages cannot be published directly to the exchange
+   * (i.e., it can only be the target of bindings, or possibly create messages
+   * ex-nihilo). Defaults to false.
+   *  - autoDelete: if true, the exchange will be destroyed once the number of
+   * bindings for which it is the source drop to zero. Defaults to false.
+   *  - alternateExchange (string): an exchange to send messages to if this
+   * exchange can’t route them to any queues.
+   *  - arguments (object): any additional arguments that may be needed by an
+   * exchange type.
+   * @returns {string} the exchange name
+   */
+  async assertExchange (channel, exchange, type, options) {
+    return await channel.assertExchange(exchange, type, options)
+  }
+
+  /**
+   * Asserts the existence of the specified Quorum queue, or creates a new one.
+   * This operation is idempotent given identical arguments; however, it will
+   * crash the channel if the queue already exists but has different properties.
    *
    * @param {object} channel the channel to assert queue existence
    * @param {string} queue the name of the queue
