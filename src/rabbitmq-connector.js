@@ -281,6 +281,60 @@ class RabbitMQConnector extends EventEmitter {
     const content = Buffer.from(message)
     return await channel.publish(exchange, routingKey, content, options)
   }
+
+  /**
+   * Sets up a consumer with a callback to be invoked with each message.
+   *
+   * @param {object} channel the channel to use to consume message(s)
+   * @param {string} queue the name of the queue from which message(s) will be
+   * consumed
+   * @param {consumeMessageCallback} callback the function to be invoked every
+   * time a message gets consumed
+   * @param {object} options an object that may be omitted. The relevant fields
+   * in options are:
+   *  - consumerTag: a name which the server will use to distinguish message
+   * deliveries for the consumer; mustn’t be already in use on the channel. It’s
+   * usually easier to omit this, in which case the server will create a random
+   * name and supply it in the reply.
+   *  - noLocal: RabbitMQ doesn’t implement it though, and will ignore it.
+   * Defaults to false.
+   *  - noAck: if true, the broker won’t expect an acknowledgement of messages
+   * delivered to this consumer; i.e., it will dequeue messages as soon as they
+   * have been sent down the wire. Defaults to false (i.e., you will be expected
+   * to acknowledge messages)
+   *  - exclusive: if true, the broker won’t let anyone else consume from this
+   * queue; if there already is a consumer, there goes your channel (so usually
+   * only useful if you’ve made a ‘private’ queue by letting the server choose
+   * its name)
+   *  - priority: gives a priority to the consumer; higher priority consumers
+   * get messages in preference to lower priority consumers.
+   *  - arguments: arbitrary arguments
+   * @returns {string} the consumerTag, it is necessary to save it in case later
+   * you need to cancel this consume operation (i.e., to stop getting messages)
+   */
+  async consume (channel, queue, callback, options) {
+    return await channel.consume(queue, callback, options)
+  }
+
+  /**
+   * This callback processes the messages consumed from a queue.
+   *
+   * @callback consumeMessageCallback
+   * @param {object} msg the message
+   * @param {object} msg.content a buffer containing the bytes published
+   * @param {object} msg.fields has a handful of bookkeeping values largely of
+   * interest only to the library code:
+   *  - deliveryTag: a serial number for the message;
+   *  - consumerTag: identifying the consumer for which the message is destined;
+   *  - exchange: information about the exchange;
+   *  - routingKey: the routing information with which the message was
+   * published; and,
+   * - redelivered: if true indicates that this message has been delivered
+   * before and been handed back to the server (e.g., by a nack or recover
+   * operation)
+   * @param {object} msg.properties contains the message properties, which are
+   * the options and configuration with which the message is transmitted
+   */
 }
 
 export default new RabbitMQConnector()
