@@ -277,7 +277,7 @@ class RabbitMQConnector extends EventEmitter {
    * @throws will throw an error if the message cannot be converted into a
    * buffer
    */
-  async publishMessage (channel, exchange, routingKey, message, options) {
+  async publish (channel, exchange, routingKey, message, options) {
     const content = Buffer.from(message)
     return await channel.publish(exchange, routingKey, content, options)
   }
