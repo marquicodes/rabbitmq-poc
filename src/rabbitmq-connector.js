@@ -5,18 +5,22 @@ dotenv.config()
 
 const USER = process.env.RABBITMQ_USER || 'guest'
 const PASS = process.env.RABBITMQ_PASS || 'guest'
-const NODE = process.env.RABBITMQ_NODE || 'localhost:5672'
+const NODES = process.env.RABBITMQ_NODES || 'localhost:5672'
 const VHOST = process.env.RABBITMQ_VHOST || ''
 const CONN_NAME = process.env.CONNECTION_NAME || ''
 const RECONNECT_DELAY = process.env.RECONNECT_DELAY || 5000
 
 class RabbitMQConnector extends EventEmitter {
+  #nodes // broker nodes
+  #nodeIndex // the index of the broker node that the connection is established
   #connection
   #channels
   #reconnectTimeout
 
   constructor () {
     super()
+    this.#nodes = NODES.split(',')
+    this.#nodeIndex = -1
     this.#connection = null
     this.#channels = []
     this.#reconnectTimeout = null
@@ -33,8 +37,9 @@ class RabbitMQConnector extends EventEmitter {
   }
 
   /**
-   * Tries to establish a connection to a RabbitMQ broker. If any connection
-   * error occures, it tries to reconnect after a predefined interval. In this
+   * Tries to establish a connection to a RabbitMQ broker. If a connection error
+   * occures on a node, it tries to connect to a different node. If all nodes
+   * are unavailable, it tries to reconnect after a predefined interval. In this
    * implementation there is no maximum number of reconnection attempts.
    *
    * @param {object} options an object that specifies certain properties, it can
@@ -44,9 +49,17 @@ class RabbitMQConnector extends EventEmitter {
    * @returns {object} the established connection
    */
   async connect (options = {}) {
+    // if all specified broker nodes are unavailable
+    if (this.#nodeIndex === this.#nodes.length - 1) {
+      this.#nodeIndex = -1
+      this.reconnect() // tries to reconnect after some time
+      return
+    }
+
     try {
+      const node = this.#nodes[++this.#nodeIndex]
       const connection = await amqp.connect(
-        `amqp://${USER}:${PASS}@${NODE}/${VHOST}?heartbeat=60`,
+        `amqp://${USER}:${PASS}@${node}/${VHOST}?heartbeat=60`,
         { clientProperties: { connection_name: CONN_NAME } }
       )
 
@@ -85,7 +98,7 @@ class RabbitMQConnector extends EventEmitter {
     } catch (err) {
       if (err.message.startsWith('connect ECONNREFUSED')) {
         console.error('[AMQP] Connection error: %s', err.message)
-        this.reconnect()
+        return await this.connect()
       } else {
         console.error('[AMQP] %s', err.message)
       }
@@ -100,7 +113,6 @@ class RabbitMQConnector extends EventEmitter {
    */
   reconnect (delay = RECONNECT_DELAY) {
     const options = { reason: 'reconnect' }
-    // TODO implement logic to try to connect to a different node every time
     this.#reconnectTimeout = setTimeout(() => this.connect(options), delay)
   }
 
@@ -187,6 +199,8 @@ class RabbitMQConnector extends EventEmitter {
       // closes the connection
       await this.#connection.close()
       this.#connection = null
+      this.#nodeIndex = -1
+      this.#nodes = []
     } catch (err) {
       console.error('Error while disconnecting... %s', err.message)
     }
