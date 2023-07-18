@@ -301,6 +301,10 @@ class RabbitMQConnector extends EventEmitter {
    * Sets up a consumer with a callback to be invoked with each message.
    *
    * @param {object} channel the channel to use to consume message(s)
+   * @param {boolean} acknowledge if true, it will acknowledge the channel upon
+   * successfully handling the message, otherwise it will send the nack to the
+   * channel that will requeue the message. If false, it will not perform any
+   * manual acknowledgement.
    * @param {string} queue the name of the queue from which message(s) will be
    * consumed
    * @param {consumeMessageCallback} cb the function to be invoked every time
@@ -327,8 +331,17 @@ class RabbitMQConnector extends EventEmitter {
    * @returns {string} the consumerTag, it is necessary to save it in case later
    * you need to cancel this consume operation (i.e., to stop getting messages)
    */
-  async consume (channel, queue, cb, options) {
-    return await channel.consume(queue, cb, options)
+  async consume (channel, acknowledge, queue, cb, options) {
+    return acknowledge
+      ? await channel.consume(
+        queue,
+        async function invokeCallbackAndAcknowledgeChannel (msg) {
+          const succeded = await cb(msg)
+          succeded ? channel.ack(msg) : channel.nack(msg)
+        },
+        options
+      )
+      : await channel.consume(queue, cb, options)
   }
 
   /**
