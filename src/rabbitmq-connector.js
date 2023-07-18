@@ -52,7 +52,7 @@ class RabbitMQConnector extends EventEmitter {
     // if all specified broker nodes are unavailable
     if (this.#nodeIndex === this.#nodes.length - 1) {
       this.#nodeIndex = -1
-      this.reconnect() // tries to reconnect after some time
+      this.reconnect() // tries to reconnect after the specified delay
       return
     }
 
@@ -284,7 +284,8 @@ class RabbitMQConnector extends EventEmitter {
    * that will be ignored by `RabbitMQ` but passed on to consumers. It may be
    * empty, or omitted in which case defaults will apply.
    * Extensive information on the fields that can be provided in options can be
-   * found [here]{@link https://amqp-node.github.io/amqplib/channel_api.html#channel_publish}
+   * found in the link
+   * {@link https://amqp-node.github.io/amqplib/channel_api.html#channel_publish}
    * @returns {boolean} false in case the channel’s write buffer is ‘full’, true
    * otherwise. If it returns false, it will emit a 'drain' event at some later
    * time
@@ -302,8 +303,8 @@ class RabbitMQConnector extends EventEmitter {
    * @param {object} channel the channel to use to consume message(s)
    * @param {string} queue the name of the queue from which message(s) will be
    * consumed
-   * @param {consumeMessageCallback} callback the function to be invoked every
-   * time a message gets consumed
+   * @param {consumeMessageCallback} cb the function to be invoked every time
+   * a message gets consumed
    * @param {object} options an object that may be omitted. The relevant fields
    * in options are:
    *  - consumerTag: a name which the server will use to distinguish message
@@ -326,12 +327,12 @@ class RabbitMQConnector extends EventEmitter {
    * @returns {string} the consumerTag, it is necessary to save it in case later
    * you need to cancel this consume operation (i.e., to stop getting messages)
    */
-  async consume (channel, queue, callback, options) {
-    return await channel.consume(queue, callback, options)
+  async consume (channel, queue, cb, options) {
+    return await channel.consume(queue, cb, options)
   }
 
   /**
-   * This callback processes the messages consumed from a queue.
+   * This function processes the messages consumed from a queue.
    *
    * @callback consumeMessageCallback
    * @param {object} msg the message
