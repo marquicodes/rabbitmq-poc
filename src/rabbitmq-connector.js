@@ -270,6 +270,25 @@ class RabbitMQConnector extends EventEmitter {
   }
 
   /**
+   * Asserts a routing path from an exchange to a queue: the exchange will relay
+   * messages to the queue, according to the type of the exchange and the given
+   * pattern.
+   *
+   * @param {object} channel the channel to assert a routing path from the
+   * supplied exchange to the specified queue
+   * @param {string} queue the name of the queue
+   * @param {string} exchange the name of the exchange
+   * @param {string} pattern the routing pattern between exchange and queue
+   * @param {object} options an object that may be empty, null, or omitted. It
+   * contains extra arguments that may be required for the particular exchange
+   * type (for which, see your server’s documentation
+   * {@link http://www.rabbitmq.com/documentation.html})
+   */
+  async bindQueue (channel, queue, exchange, pattern, options) {
+    await channel.bindQueue(queue, exchange, pattern, options)
+  }
+
+  /**
    * Publishes a single message to the specified exchange or queue.
    *
    * @param {object} channel the channel to use to publish the message
